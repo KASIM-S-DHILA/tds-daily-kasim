@@ -1,29 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Go to the dashboard repo root (the one this script lives in).
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 REPO_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 cd "$REPO_ROOT"
 
-# Optional: pull first so we don't race with a teammate.
 git pull --ff-only --quiet || true
 
-# Generate the summary for a specific target repo (pass --repo env or flag).
 TARGET_REPO="${TARGET_REPO:-$REPO_ROOT}"
 
 ./bin/daily-summary.sh --repo "$TARGET_REPO" --out "$REPO_ROOT/daily-summaries"
+./bin/multi-summary.sh
 
-# Commit only if something changed.
-if git diff --quiet daily-summaries; then
+git add daily-summaries
+if git diff --cached --quiet; then
   echo "No changes — not committing."
   exit 0
 fi
 
 TODAY="$(date +%Y-%m-%d)"
-git add daily-summaries
 git -c user.name="TDS Bot" \
     -c user.email="tds-bot@users.noreply.github.com" \
-    commit -m "chore: daily summary for $TODAY"
+    commit -m "chore: daily summaries for $TODAY"
 git push
-echo "Committed and pushed summary for $TODAY."
+echo "Committed and pushed summaries for $TODAY."
